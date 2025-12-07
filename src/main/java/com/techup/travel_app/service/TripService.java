@@ -8,9 +8,12 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import com.techup.travel_app.dto.TripRequest;
 import com.techup.travel_app.dto.TripResponse;
+import com.techup.travel_app.dto.TripWithFilesRequest;
 import com.techup.travel_app.exception.ResourceNotFoundException;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
+import java.util.ArrayList;
 
 @Service
 @RequiredArgsConstructor
@@ -18,6 +21,7 @@ public class TripService {
 
     private final TripRepository tripRepository;
     private final UserRepository userRepository;
+    private final SupabaseStorageService storageService;
 
     public List<TripResponse> getAllTrips() {
         return tripRepository.findAll().stream()
@@ -124,5 +128,45 @@ public class TripService {
 
     public void deleteTrip(Long id) {
         tripRepository.deleteById(id);
+    }
+
+    public TripResponse createTripWithFiles(TripWithFilesRequest request) {
+        // Upload files to Supabase
+        List<String> photoUrls = new ArrayList<>();
+        if (request.getFiles() != null && !request.getFiles().isEmpty()) {
+            for (MultipartFile file : request.getFiles()) {
+                String url = storageService.uploadFile(file);
+                photoUrls.add(url);
+            }
+        }
+
+        // Create trip with uploaded photo URLs
+        Trip trip = new Trip();
+        trip.setTitle(request.getTitle());
+        trip.setDescription(request.getDescription());
+        trip.setPhotos(photoUrls);
+        trip.setTags(request.getTags());
+        trip.setLatitude(request.getLatitude());
+        trip.setLongitude(request.getLongitude());
+
+        if (request.getAuthorId() != null) {
+            User user = userRepository.findById(request.getAuthorId())
+                    .orElseThrow(() -> new ResourceNotFoundException("User not found: " + request.getAuthorId()));
+            trip.setAuthor(user);
+        }
+
+        Trip saved = tripRepository.save(trip);
+        return new TripResponse(
+                saved.getId(),
+                saved.getTitle(),
+                saved.getDescription(),
+                saved.getPhotos(),
+                saved.getTags(),
+                saved.getLatitude(),
+                saved.getLongitude(),
+                saved.getAuthor() != null ? saved.getAuthor().getId() : null,
+                saved.getCreatedAt(),
+                saved.getUpdatedAt()
+        );
     }
 }

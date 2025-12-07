@@ -1,0 +1,61 @@
+/**
+ * API EXAMPLE: Create Trip with Files
+ * 
+ * Endpoint: POST /api/trips/with-files
+ * Content-Type: multipart/form-data
+ * 
+ * REQUEST PARAMETERS:
+ * ─────────────────────
+ * - title (String, required): ชื่อ trip
+ * - description (String, optional): รายละเอียด trip
+ * - files (MultipartFile[], optional): ไฟล์รูปภาพ (สามารถส่งได้หลายไฟล์)
+ * - tags (List<String>, optional): tags สำหรับ trip (เช่น ["bangkok", "food"])
+ * - latitude (Double, optional): พิกัด latitude
+ * - longitude (Double, optional): พิกัด longitude
+ * - authorId (Long, optional): ID ของผู้สร้าง trip
+ * 
+ * EXAMPLE CURL:
+ * ─────────────
+ * curl -X POST http://localhost:8080/api/trips/with-files \
+ *   -F "title=Bangkok Street Food Tour" \
+ *   -F "description=Amazing street food experience in Bangkok" \
+ *   -F "files=@/path/to/image1.jpg" \
+ *   -F "files=@/path/to/image2.jpg" \
+ *   -F "tags=bangkok" \
+ *   -F "tags=food" \
+ *   -F "latitude=13.7563" \
+ *   -F "longitude=100.5018" \
+ *   -F "authorId=1"
+ * 
+ * EXAMPLE RESPONSE:
+ * ────────────────
+ * {
+ *   "id": 1,
+ *   "title": "Bangkok Street Food Tour",
+ *   "description": "Amazing street food experience in Bangkok",
+ *   "photos": [
+ *     "https://zekftdwxxinqboamrcgh.storage.supabase.co/uploads/trip_1_image1.jpg",
+ *     "https://zekftdwxxinqboamrcgh.storage.supabase.co/uploads/trip_1_image2.jpg"
+ *   ],
+ *   "tags": ["bangkok", "food"],
+ *   "latitude": 13.7563,
+ *   "longitude": 100.5018,
+ *   "authorId": 1,
+ *   "createdAt": "2025-12-07T17:30:45.123Z",
+ *   "updatedAt": "2025-12-07T17:30:45.123Z"
+ * }
+ * 
+ * WHAT HAPPENS:
+ * ─────────────
+ * 1. ไฟล์ที่ส่งมาจะถูก upload ไปยัง Supabase Storage
+ * 2. ระบบจะเก็บ URLs ของไฟล์ที่ upload สำเร็จ
+ * 3. สร้าง Trip record ใหม่ในฐานข้อมูล พร้อมกับ photo URLs
+ * 4. ส่ง TripResponse กลับ พร้อมข้อมูล trip ที่สร้างใหม่
+ * 
+ * NOTES:
+ * ──────
+ * - หากไม่มี files ส่งมา จะสร้าง trip โดยไม่มี photos
+ * - สามารถส่ง files ได้หลายไฟล์พร้อมกัน
+ * - ไฟล์จะถูก upload ก่อน แล้วจึงสร้าง Trip
+ * - ถ้า author ที่ระบุไม่มีอยู่ จะ throw ResourceNotFoundException
+ */
