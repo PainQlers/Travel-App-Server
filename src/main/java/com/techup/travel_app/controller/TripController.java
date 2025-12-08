@@ -34,7 +34,7 @@ public class TripController {
     }
 
     @PostMapping(consumes = {"multipart/form-data"})
-    public TripResponse create(
+    public TripResponse createWithFiles(
             @RequestParam("title") String title,
             @RequestParam(value = "description", required = false) String description,
             @RequestParam(value = "files", required = false) List<MultipartFile> files,
