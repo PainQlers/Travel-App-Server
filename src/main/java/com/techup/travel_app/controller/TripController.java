@@ -33,7 +33,7 @@ public class TripController {
         return tripService.createTrip(request);
     }
 
-    @PostMapping(consumes = {"multipart/form-data"})
+    @PostMapping(path = "/with-files", consumes = {"multipart/form-data"})
     public TripResponse createWithFiles(
             @RequestParam("title") String title,
             @RequestParam(value = "description", required = false) String description,
