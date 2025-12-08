@@ -11,6 +11,9 @@ import com.techup.travel_app.dto.TripResponse;
 import com.techup.travel_app.dto.TripWithFilesRequest;
 import com.techup.travel_app.exception.ResourceNotFoundException;
 import org.springframework.web.multipart.MultipartFile;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.authentication.AnonymousAuthenticationToken;
 
 import java.util.List;
 import java.util.ArrayList;
@@ -67,10 +70,10 @@ public class TripService {
         trip.setLatitude(request.getLatitude());
         trip.setLongitude(request.getLongitude());
     
-        if (request.getAuthorId() != null) {
-            User user = userRepository.findById(request.getAuthorId())
-                    .orElseThrow(() -> new ResourceNotFoundException("User not found: " + request.getAuthorId()));
-            trip.setAuthor(user);
+        // Set author from authenticated user (ignore client-supplied authorId)
+        User current = getCurrentAuthenticatedUser();
+        if (current != null) {
+            trip.setAuthor(current);
         }
     
         Trip saved = tripRepository.save(trip);
@@ -130,6 +133,20 @@ public class TripService {
         tripRepository.deleteById(id);
     }
 
+    /**
+     * Return the authenticated User entity based on the SecurityContext principal (email).
+     * Returns null if no authenticated user is found.
+     */
+    private User getCurrentAuthenticatedUser() {
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        if (auth == null || !auth.isAuthenticated() || auth instanceof AnonymousAuthenticationToken) {
+            return null;
+        }
+
+        String email = auth.getName(); // CustomUserDetailsService sets username = email
+        return userRepository.findByEmail(email).orElse(null);
+    }
+
     public TripResponse createTripWithFiles(TripWithFilesRequest request) {
         // Upload files to Supabase
         List<String> photoUrls = new ArrayList<>();
@@ -149,10 +166,10 @@ public class TripService {
         trip.setLatitude(request.getLatitude());
         trip.setLongitude(request.getLongitude());
 
-        if (request.getAuthorId() != null) {
-            User user = userRepository.findById(request.getAuthorId())
-                    .orElseThrow(() -> new ResourceNotFoundException("User not found: " + request.getAuthorId()));
-            trip.setAuthor(user);
+        // Set author from authenticated user (ignore client-supplied authorId)
+        User current = getCurrentAuthenticatedUser();
+        if (current != null) {
+            trip.setAuthor(current);
         }
 
         Trip saved = tripRepository.save(trip);
