@@ -23,7 +23,7 @@ public class AuthController {
 
     @PostMapping("/register")
     public String register(@RequestBody Map<String, String> req) {
-        return authService.register(req.get("email"), req.get("password"));
+        return authService.register(req.get("email"), req.get("password"), req.get("displayName"));
     }
 
     @PostMapping("/login")

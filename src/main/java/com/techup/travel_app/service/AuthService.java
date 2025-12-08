@@ -15,7 +15,7 @@ public class AuthService {
     private final JwtService jwtService;
     private final BCryptPasswordEncoder passwordEncoder;
     
-    public String register(String email, String password) {
+    public String register(String email, String password, String displayName) {
         if(userRepository.findByEmail(email).isPresent()) {
             throw new RuntimeException("Email already exists");
         }
@@ -23,6 +23,7 @@ public class AuthService {
         User user = User.builder()
         .email(email)
         .passwordHash(passwordEncoder.encode(password))
+        .displayName(displayName)
         .build();
 
         userRepository.save(user);
