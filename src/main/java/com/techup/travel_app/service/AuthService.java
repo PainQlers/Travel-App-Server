@@ -7,6 +7,8 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
 
+import java.util.Map;
+
 @Service
 @RequiredArgsConstructor
 public class AuthService {
@@ -39,5 +41,16 @@ public class AuthService {
         }
 
         return jwtService.generateToken(user.getEmail());
+    }
+
+    public Map<String, Object> getCurrentUserInfo(String email) {
+        User user = userRepository.findByEmail(email)
+            .orElseThrow(() -> new RuntimeException("User not found"));
+
+        return Map.of(
+            "id", user.getId(),
+            "email", user.getEmail(),
+            "displayName", user.getDisplayName() == null ? "" : user.getDisplayName()
+        );
     }
 }
