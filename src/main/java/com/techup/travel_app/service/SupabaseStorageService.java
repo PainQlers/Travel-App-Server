@@ -23,12 +23,24 @@ public class SupabaseStorageService {
   @Value("${supabase.apiKey}")
   private String apiKey;
 
+  // Configuration
+  private static final long MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
+  private static final String[] ALLOWED_TYPES = {"image/jpeg", "image/png", "image/webp", "image/gif"};
+
   private final WebClient webClient = WebClient.builder().build();
 
-  /** อัปโหลดไฟล์ขึ้น Supabase แล้วคืน public URL */
+  /**
+   * Upload file to Supabase Storage with validation.
+   * @param file MultipartFile to upload
+   * @return Public URL of the uploaded file
+   * @throws ResponseStatusException if validation fails or upload fails
+   */
   public String uploadFile(MultipartFile file) {
+    // Validate file
+    validateFile(file);
+
     String original = file.getOriginalFilename() != null ? file.getOriginalFilename() : "file.bin";
-    String fileName = System.currentTimeMillis() + "_" + original;
+    String fileName = System.currentTimeMillis() + "_" + sanitizeFileName(original);
     String uploadUrl = String.format("%s/storage/v1/object/%s/%s", supabaseUrl, bucket, fileName);
 
     byte[] bytes;
@@ -53,7 +65,7 @@ public class SupabaseStorageService {
           .toBodilessEntity()
           .block();
 
-      // public URL สำหรับ access ไฟล์ได้ทันที
+      // Return public URL
       return String.format("%s/storage/v1/object/public/%s/%s", supabaseUrl, bucket, fileName);
 
     } catch (ResponseStatusException ex) {
@@ -61,5 +73,40 @@ public class SupabaseStorageService {
     } catch (Exception ex) {
       throw new ResponseStatusException(HttpStatus.BAD_GATEWAY, "Unexpected error while uploading to Supabase", ex);
     }
+  }
+
+  /**
+   * Validate file before upload
+   */
+  private void validateFile(MultipartFile file) {
+    if (file == null || file.isEmpty()) {
+      throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "File is empty");
+    }
+
+    if (file.getSize() > MAX_FILE_SIZE) {
+      throw new ResponseStatusException(HttpStatus.BAD_REQUEST, 
+          "File size exceeds maximum limit of 10MB");
+    }
+
+    String contentType = file.getContentType();
+    boolean isAllowed = false;
+    for (String allowed : ALLOWED_TYPES) {
+      if (allowed.equals(contentType)) {
+        isAllowed = true;
+        break;
+      }
+    }
+
+    if (!isAllowed) {
+      throw new ResponseStatusException(HttpStatus.BAD_REQUEST, 
+          "File type not allowed. Allowed types: JPEG, PNG, WebP, GIF");
+    }
+  }
+
+  /**
+   * Sanitize file name to avoid path traversal and special characters
+   */
+  private String sanitizeFileName(String fileName) {
+    return fileName.replaceAll("[^a-zA-Z0-9._-]", "_");
   }
 }
